@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Joe's Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: #2a2a2e;
+    --accent: #c8a96e;
+    --accent2: #7eb8c9;
+    --text: #e8e4dc;
+    --muted: #6b6b72;
+    --danger: #c97070;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(200,169,110,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 10% 80%, rgba(126,184,201,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 128px;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards;
+  }
+
+  .greeting-block h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .greeting-block h1 span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .date-line {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .clock-display {
+    text-align: right;
+  }
+
+  #clock {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+
+  #clock-ampm {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.2s; }
+  .card:nth-child(3) { animation-delay: 0.3s; }
+  .card:nth-child(4) { animation-delay: 0.4s; grid-column: 1 / 3; }
+  .card:nth-child(5) { animation-delay: 0.5s; }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-label::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: var(--muted);
+  }
+
+  /* WEATHER CARDS */
+  .weather-card .weather-body {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .weather-temp {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .weather-temp sup {
+    font-size: 1rem;
+    color: var(--muted);
+    vertical-align: super;
+  }
+
+  .weather-details {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .weather-desc {
+    font-size: 13px;
+    color: var(--text);
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .weather-loading {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .weather-error {
+    font-size: 11px;
+    color: var(--danger);
+  }
+
+  .forecast-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .forecast-day {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .forecast-day-name {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .forecast-day-temp {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .forecast-day-temp sup {
+    font-size: 0.6rem;
+    color: var(--muted);
+    vertical-align: super;
+  }
+
+  .forecast-day-hi-lo {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .forecast-day-desc {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* QUICK LINKS */
+  .links-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .link-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .link-btn:hover {
+    border-color: var(--accent);
+    background: rgba(200,169,110,0.06);
+    color: var(--accent);
+  }
+
+  .link-btn .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .icon-todoist { background: rgba(219,68,55,0.15); }
+  .icon-drive   { background: rgba(66,133,244,0.15); }
+  .icon-calendar { background: rgba(52,168,83,0.15); }
+  .icon-gmail   { background: rgba(234,67,53,0.12); }
+
+  /* NOTES */
+  .notes-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #scratchpad {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    resize: none;
+    min-height: 180px;
+    caret-color: var(--accent);
+  }
+
+  #scratchpad::placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .notes-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .notes-footer span {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .save-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .save-btn:hover {
+    background: rgba(200,169,110,0.1);
+  }
+
+  .save-btn.saved {
+    color: var(--accent2);
+    border-color: var(--accent2);
+  }
+
+  /* FOCUS */
+  .focus-card {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .focus-input-wrap {
+    position: relative;
+  }
+
+  #focus-text {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    font-style: italic;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #focus-text:focus {
+    border-color: var(--accent);
+  }
+
+  #focus-text::placeholder {
+    color: var(--muted);
+  }
+
+  .focus-set-btn {
+    margin-top: 10px;
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .focus-set-btn:hover { opacity: 0.85; }
+
+  .focus-display {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: var(--accent);
+    line-height: 1.4;
+    min-height: 48px;
+    display: none;
+    padding: 8px 0;
+  }
+
+  .focus-clear {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    display: none;
+  }
+
+  .focus-clear:hover { color: var(--danger); }
+
+  /* DIVIDER */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 40px 0 32px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 0.6s forwards;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 0.7s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .card:nth-child(4) { grid-column: 1 / 3; }
+    .card:nth-child(5) { grid-column: 1 / 3; }
+  }
+
+  @media (max-width: 600px) {
+    .wrapper { padding: 24px 20px; }
+    header { flex-direction: column; gap: 12px; }
+    .clock-display { text-align: left; }
+    .grid { grid-template-columns: 1fr; }
+    .card:nth-child(4), .card:nth-child(5) { grid-column: 1; }
+  }
+
+  /* WEEKLY OBJECTIVES */
+  .weekly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .weekly-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .clear-week-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .clear-week-btn:hover {
+    background: rgba(201,112,112,0.1);
+  }
+
+  .weekly-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .day-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 12px;
+  }
+
+  .day-col.today {
+    border-color: #1e3a5f;
+    background: rgba(24,52,90,0.35);
+  }
+
+  .day-name {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .day-col.today .day-name {
+    color: var(--accent2);
+  }
+
+  .obj-slot {
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .obj-slot:last-child {
+    margin-bottom: 0;
+  }
+
+  .obj-slot {
+    position: relative;
+  }
+
+  .obj-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px 8px 32px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    outline: none;
+    resize: none;
+    min-height: 52px;
+    transition: border-color 0.2s, opacity 0.2s;
+    caret-color: var(--accent);
+  }
+
+  .obj-input:focus {
+    border-color: var(--accent);
+  }
+
+  .obj-input::placeholder {
+    color: var(--border);
+    font-style: italic;
+  }
+
+  .obj-input.done {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: 0.45;
+    border-color: transparent;
+  }
+
+  .obj-check {
+    position: absolute;
+    top: 10px;
+    left: 8px;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .obj-check:hover {
+    border-color: var(--accent);
+    background: rgba(200,169,110,0.1);
+  }
+
+  .obj-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .obj-check.checked::after {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 7px;
+    border: 1.5px solid var(--bg);
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+
+  @media (max-width: 1100px) {
+    .weekly-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  @media (max-width: 700px) {
+    .weekly-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 400px) {
+    .weekly-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrapper">
+
+  <header>
+    <div class="greeting-block">
+      <h1 id="greeting">Good morning, <span>Joe.</span></h1>
+      <div class="date-line" id="date-line">—</div>
+    </div>
+    <div class="clock-display">
+      <div id="clock">—:——</div>
+      <div id="clock-ampm">Loading</div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- Santa Ana Weather -->
+    <div class="card weather-card" id="weather-santa-ana">
+      <div class="card-label">Santa Ana, CA</div>
+      <div class="weather-body">
+        <div class="weather-temp" id="temp-sa"><span class="weather-loading">fetching…</span></div>
+        <div class="weather-details" id="details-sa"></div>
+      </div>
+      <div class="weather-desc" id="desc-sa"></div>
+      <div class="forecast-row" id="forecast-sa"></div>
+    </div>
+
+    <!-- Newport Beach Weather -->
+    <div class="card weather-card" id="weather-newport">
+      <div class="card-label">Newport Beach, CA</div>
+      <div class="weather-body">
+        <div class="weather-temp" id="temp-nb"><span class="weather-loading">fetching…</span></div>
+        <div class="weather-details" id="details-nb"></div>
+      </div>
+      <div class="weather-desc" id="desc-nb"></div>
+      <div class="forecast-row" id="forecast-nb"></div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card">
+      <div class="card-label">Quick Links</div>
+      <div class="links-grid">
+        <a class="link-btn" href="https://todoist.com" target="_blank">
+          <div class="icon icon-todoist">✓</div>Todoist
+        </a>
+        <a class="link-btn" href="https://drive.google.com" target="_blank">
+          <div class="icon icon-drive">▲</div>Drive
+        </a>
+        <a class="link-btn" href="https://calendar.google.com" target="_blank">
+          <div class="icon icon-calendar">◈</div>Calendar
+        </a>
+        <a class="link-btn" href="https://mail.proton.me/u/0/inbox" target="_blank">
+          <div class="icon icon-gmail">✉</div>ProtonMail
+        </a>
+      </div>
+    </div>
+
+    <!-- Scratchpad -->
+    <div class="card notes-card">
+      <div class="card-label">Scratchpad</div>
+      <textarea id="scratchpad" placeholder="jot something down…" spellcheck="false"></textarea>
+      <div class="notes-footer">
+        <span id="notes-status">unsaved</span>
+        <button class="save-btn" onclick="saveNotes()">Save</button>
+      </div>
+    </div>
+
+    <!-- Today's Focus -->
+    <div class="card focus-card">
+      <div class="card-label">Today's Focus</div>
+      <div class="focus-display" id="focus-display"></div>
+      <button class="focus-clear" id="focus-clear" onclick="clearFocus()">Clear focus</button>
+      <div class="focus-input-wrap" id="focus-input-wrap">
+        <input type="text" id="focus-text" placeholder="What matters most today?" maxlength="80">
+        <button class="focus-set-btn" onclick="setFocus()">Set intention</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- WEEKLY OBJECTIVES -->
+  <div class="weekly-header">
+    <div class="weekly-title-block">
+      <div class="card-label" style="margin-bottom:4px;">Weekly Objectives</div>
+      <p class="weekly-sub">Three goals per day — clear them all when the week resets.</p>
+    </div>
+    <button class="clear-week-btn" onclick="confirmClearWeek()">Clear Week</button>
+  </div>
+
+  <div class="weekly-grid" id="weekly-grid"></div>
+
+  <div class="section-divider" style="animation-delay:0.9s"></div>
+  <footer>joe's dashboard &nbsp;·&nbsp; <span id="footer-date"></span></footer>
+
+</div>
+
+<script>
+// ── CLOCK & GREETING ──────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  document.getElementById('clock').textContent = h12 + ':' + m;
+  document.getElementById('clock-ampm').textContent = ampm;
+
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').innerHTML = greeting + ', <span>Joe.</span>';
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateStr = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  document.getElementById('date-line').textContent = '— ' + dateStr;
+  document.getElementById('footer-date').textContent = dateStr;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── WEATHER ───────────────────────────────────────────────────
+const weatherCodes = {0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Showers',81:'Heavy showers',82:'Violent showers',95:'Thunderstorm',96:'Hail storm',99:'Hail storm'};
+const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+async function fetchWeather(lat, lon, tempId, detailsId, descId, forecastId) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=America/Los_Angeles&forecast_days=4`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const cw = data.current_weather;
+    const temp = Math.round(cw.temperature);
+    const wind = Math.round(cw.windspeed);
+    const desc = weatherCodes[cw.weathercode] || 'Unknown';
+
+    document.getElementById(tempId).innerHTML = temp + '<sup>°F</sup>';
+    document.getElementById(detailsId).innerHTML = `Wind ${wind} mph`;
+    document.getElementById(descId).textContent = desc;
+
+    // 3-day forecast (skip index 0 = today)
+    const daily = data.daily;
+    let forecastHTML = '';
+    for (let i = 1; i <= 3; i++) {
+      const date = new Date(daily.time[i] + 'T12:00:00');
+      const dayName = dayNames[date.getDay()];
+      const hi = Math.round(daily.temperature_2m_max[i]);
+      const lo = Math.round(daily.temperature_2m_min[i]);
+      const fdesc = weatherCodes[daily.weathercode[i]] || '';
+      forecastHTML += `
+        <div class="forecast-day">
+          <div class="forecast-day-name">${dayName}</div>
+          <div class="forecast-day-temp">${hi}<sup>°</sup></div>
+          <div class="forecast-day-hi-lo">${lo}° lo</div>
+          <div class="forecast-day-desc">${fdesc}</div>
+        </div>`;
+    }
+    document.getElementById(forecastId).innerHTML = forecastHTML;
+  } catch(e) {
+    document.getElementById(tempId).innerHTML = '<span class="weather-error">unavailable</span>';
+  }
+}
+
+fetchWeather(33.7455, -117.8677, 'temp-sa', 'details-sa', 'desc-sa', 'forecast-sa');
+fetchWeather(33.6189, -117.9289, 'temp-nb', 'details-nb', 'desc-nb', 'forecast-nb');
+
+// ── NOTES ─────────────────────────────────────────────────────
+const pad = document.getElementById('scratchpad');
+const saved = localStorage.getItem('joe_notes');
+if (saved) { pad.value = saved; document.getElementById('notes-status').textContent = 'saved'; }
+
+pad.addEventListener('input', () => {
+  document.getElementById('notes-status').textContent = 'unsaved';
+  document.querySelector('.save-btn').classList.remove('saved');
+});
+
+function saveNotes() {
+  localStorage.setItem('joe_notes', pad.value);
+  document.getElementById('notes-status').textContent = 'saved';
+  const btn = document.querySelector('.save-btn');
+  btn.textContent = 'Saved ✓';
+  btn.classList.add('saved');
+  setTimeout(() => { btn.textContent = 'Save'; btn.classList.remove('saved'); }, 2000);
+}
+
+// Ctrl+S to save
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveNotes(); }
+});
+
+// ── FOCUS ─────────────────────────────────────────────────────
+const savedFocus = localStorage.getItem('joe_focus');
+if (savedFocus) showFocusDisplay(savedFocus);
+
+document.getElementById('focus-text').addEventListener('keydown', e => {
+  if (e.key === 'Enter') setFocus();
+});
+
+function setFocus() {
+  const val = document.getElementById('focus-text').value.trim();
+  if (!val) return;
+  localStorage.setItem('joe_focus', val);
+  showFocusDisplay(val);
+}
+
+function showFocusDisplay(val) {
+  document.getElementById('focus-display').textContent = '"' + val + '"';
+  document.getElementById('focus-display').style.display = 'block';
+  document.getElementById('focus-clear').style.display = 'inline';
+  document.getElementById('focus-input-wrap').style.display = 'none';
+}
+
+function clearFocus() {
+  localStorage.removeItem('joe_focus');
+  document.getElementById('focus-display').style.display = 'none';
+  document.getElementById('focus-clear').style.display = 'none';
+  document.getElementById('focus-input-wrap').style.display = 'block';
+  document.getElementById('focus-text').value = '';
+}
+
+// ── WEEKLY OBJECTIVES ─────────────────────────────────────────
+const fullDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const shortDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const dayIndices = [1,2,3,4,5,6,0];
+
+function buildWeeklyGrid() {
+  const grid = document.getElementById('weekly-grid');
+  const todayIdx = new Date().getDay();
+  grid.innerHTML = '';
+
+  fullDays.forEach((day, d) => {
+    const realIdx = dayIndices[d];
+    const col = document.createElement('div');
+    col.className = 'day-col' + (realIdx === todayIdx ? ' today' : '');
+
+    const label = document.createElement('div');
+    label.className = 'day-name';
+    label.textContent = shortDays[d];
+    col.appendChild(label);
+
+    for (let s = 0; s < 3; s++) {
+      const key = `joe_obj_${realIdx}_${s}`;
+      const slot = document.createElement('div');
+      slot.className = 'obj-slot';
+
+      const checkKey = key + '_done';
+      const isDone = localStorage.getItem(checkKey) === '1';
+
+      const check = document.createElement('div');
+      check.className = 'obj-check' + (isDone ? ' checked' : '');
+
+      const ta = document.createElement('textarea');
+      ta.className = 'obj-input' + (isDone ? ' done' : '');
+      ta.placeholder = 'objective ' + (s + 1);
+      ta.spellcheck = false;
+      ta.value = localStorage.getItem(key) || '';
+      if (ta.value) autoResize(ta);
+
+      ta.addEventListener('input', () => {
+        localStorage.setItem(key, ta.value);
+        autoResize(ta);
+      });
+
+      check.addEventListener('click', () => {
+        const nowDone = !check.classList.contains('checked');
+        check.classList.toggle('checked', nowDone);
+        ta.classList.toggle('done', nowDone);
+        localStorage.setItem(checkKey, nowDone ? '1' : '0');
+      });
+
+      slot.appendChild(check);
+      slot.appendChild(ta);
+      col.appendChild(slot);
+    }
+
+    grid.appendChild(col);
+  });
+}
+
+function autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(52, ta.scrollHeight) + 'px';
+}
+
+function confirmClearWeek() {
+  const btn = document.querySelector('.clear-week-btn');
+  if (btn.dataset.confirm === '1') {
+    clearAllObjectives();
+    btn.textContent = 'Cleared ✓';
+    btn.dataset.confirm = '0';
+    setTimeout(() => { btn.textContent = 'Clear Week'; }, 2000);
+  } else {
+    btn.textContent = 'Are you sure?';
+    btn.dataset.confirm = '1';
+    setTimeout(() => {
+      btn.textContent = 'Clear Week';
+      btn.dataset.confirm = '0';
+    }, 3000);
+  }
+}
+
+function clearAllObjectives() {
+  for (let d = 0; d < 7; d++) {
+    for (let s = 0; s < 3; s++) {
+      localStorage.removeItem(`joe_obj_${d}_${s}`);
+      localStorage.removeItem(`joe_obj_${d}_${s}_done`);
+    }
+  }
+  buildWeeklyGrid();
+}
+
+buildWeeklyGrid();
+</script>
+</body>
+</html>
